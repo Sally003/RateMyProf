@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { ShieldCheck, Plus, Flag, Award, BookOpen, ThumbsUp, Flame, ArrowLeft, CheckCircle2, AlertCircle } from 'lucide-react';
 import ThreeDTile from '../components/3DTile';
 import RatingBreakdownTile from '../components/RatingBreakdownTile';
+import ProfessorAvatar from '../components/ProfessorAvatar';
 import { DataService } from '../services/dataService';
 
 export default function ProfessorProfilePage({ onOpenSubmitReview, onOpenReportModal }) {
@@ -61,11 +62,7 @@ export default function ProfessorProfilePage({ onOpenSubmitReview, onOpenReportM
       <ThreeDTile variant="indigo" hover={false} className="p-6 md:p-8">
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
           <div className="flex items-center gap-5">
-            <img
-              src={professor.profileUrl}
-              alt={professor.name}
-              className="w-20 h-20 md:w-24 md:h-24 rounded-2xl object-cover border-4 border-white/20 shadow-xl"
-            />
+            <ProfessorAvatar name={professor.name} profileUrl={professor.profileUrl} size="lg" />
             <div>
               <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/20 text-amber-300 text-xs font-semibold border border-amber-500/30 mb-2">
                 <ShieldCheck className="w-3.5 h-3.5" />

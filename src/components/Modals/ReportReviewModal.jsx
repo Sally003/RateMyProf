@@ -43,7 +43,7 @@ export default function ReportReviewModal({ isOpen, onClose, reviewId, onReportS
             </div>
             <div>
               <h3 className="font-display font-bold text-base text-white">Report Review</h3>
-              <p className="text-xs text-rose-200">Help keep CampusRate accurate & trustworthy</p>
+              <p className="text-xs text-rose-200">Help keep RateMyProff accurate & trustworthy</p>
             </div>
           </div>
           <button onClick={onClose} className="p-1.5 text-rose-300 hover:text-white rounded-lg hover:bg-white/10 transition-colors cursor-pointer">

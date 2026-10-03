@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Search, Filter, ShieldCheck, Star, GraduationCap, ChevronRight, Award, PlusCircle } from 'lucide-react';
 import ThreeDTile from '../components/3DTile';
+import ProfessorAvatar from '../components/ProfessorAvatar';
 import { DataService } from '../services/dataService';
 
 export default function ProfessorSearchPage({ onOpenRequestModal }) {
@@ -150,11 +151,7 @@ export default function ProfessorSearchPage({ onOpenRequestModal }) {
             >
               <div>
                 <div className="flex items-start justify-between gap-3 mb-4">
-                  <img
-                    src={prof.profileUrl}
-                    alt={prof.name}
-                    className="w-14 h-14 rounded-2xl object-cover shadow-md border-2 border-indigo-100"
-                  />
+                  <ProfessorAvatar name={prof.name} profileUrl={prof.profileUrl} size="md" />
 
                   {/* Rating Score Badge */}
                   <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo-950 to-indigo-800 text-amber-400 flex flex-col items-center justify-center shadow-md shrink-0">

@@ -73,7 +73,7 @@ export default function RequestProfessorModal({ isOpen, onClose, onRequestSubmit
             </div>
             <div>
               <h3 className="font-display font-bold text-base text-white">Request Missing Professor</h3>
-              <p className="text-xs text-indigo-200">Add a faculty member to CampusRate</p>
+              <p className="text-xs text-indigo-200">Add a faculty member to RateMyProff</p>
             </div>
           </div>
           <button onClick={onClose} className="p-1.5 text-indigo-300 hover:text-white rounded-lg hover:bg-white/10 transition-colors cursor-pointer">

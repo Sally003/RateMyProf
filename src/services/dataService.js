@@ -1,5 +1,6 @@
 import { supabase, isSupabaseConfigured } from './supabaseClient';
 import neCollegesData from './northeast_institutions.json';
+import inCollegesData from './indian_institutions.json';
 
 // Process crawled Northeastern institutions
 const NE_COLLEGES = neCollegesData.map(c => ({
@@ -72,8 +73,80 @@ neCollegesData.forEach((col, idx) => {
   });
 });
 
+// Process crawled Pan-India institutions
+const IN_COLLEGES = inCollegesData.map(c => ({
+  id: c.id,
+  name: c.name,
+  city: c.city,
+  state: c.state,
+  website: c.website,
+  badge: c.badge || 'Premier Institution',
+  departmentsCount: c.departmentsCount || 15,
+  professorsCount: c.professorsCount || 60
+}));
+
+const IN_DEPARTMENTS = [];
+const IN_COURSES = [];
+const IN_PROFESSORS = [];
+const IN_REVIEWS = [];
+
+inCollegesData.forEach((col, idx) => {
+  (col.departments || ['Computer Science', 'Electronics']).forEach((deptName, dIdx) => {
+    const deptId = `dept-in-crawl-${idx}-${dIdx}`;
+    IN_DEPARTMENTS.push({ id: deptId, collegeId: col.id, name: deptName });
+    IN_COURSES.push({
+      id: `crs-in-crawl-${idx}-${dIdx}`,
+      collegeId: col.id,
+      departmentId: deptId,
+      courseCode: `${deptName.substring(0, 3).toUpperCase()}201`,
+      name: `Advanced ${deptName}`
+    });
+  });
+
+  (col.professors || []).forEach((p, pIdx) => {
+    const profId = `prof-in-crawl-${idx}-${pIdx}`;
+    const dept = IN_DEPARTMENTS.find(d => d.collegeId === col.id && d.name === p.department) || IN_DEPARTMENTS[0];
+    const deptId = dept ? dept.id : `dept-in-crawl-${idx}-0`;
+    
+    IN_PROFESSORS.push({
+      id: profId,
+      collegeId: col.id,
+      collegeName: col.name.split(' (')[0],
+      departmentId: deptId,
+      departmentName: p.department || 'Computer Science',
+      name: p.name,
+      designation: p.designation || 'Professor',
+      profileUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80',
+      verificationStatus: 'Official Source Verified',
+      bio: p.bio || 'Faculty member extracted from university directory.'
+    });
+
+    IN_REVIEWS.push({
+      id: `rev-in-crawl-${idx}-${pIdx}`,
+      profId: profId,
+      courseId: `crs-in-crawl-${idx}-0`,
+      courseName: p.course || `${p.department} Core`,
+      teachingRating: 5,
+      markingRating: 4,
+      communicationRating: 5,
+      approachabilityRating: 5,
+      difficultyRating: 4,
+      wouldTakeAgain: true,
+      reviewText: `Prof. ${p.name.split(' ').slice(-1)[0]} is widely acclaimed for outstanding lectures at ${col.name}. Highly recommended!`,
+      semester: 'Spring',
+      academicYear: 2025,
+      status: 'approved',
+      credibilityLabel: 'Verified Student',
+      credibilityScore: 96.0,
+      riskScore: 0.0,
+      createdAt: '2025-11-20T10:00:00Z'
+    });
+  });
+});
+
 // INITIAL SEED DATA FOR DEMO & FALLBACK RUNTIME
 const SEED_COLLEGES = [
+  ...IN_COLLEGES,
   ...NE_COLLEGES,
   {
     id: 'col-in-1',
@@ -168,6 +241,7 @@ const SEED_COLLEGES = [
 ];
 
 const SEED_DEPARTMENTS = [
+  ...IN_DEPARTMENTS,
   ...NE_DEPARTMENTS,
   { id: 'dept-in-1', collegeId: 'col-in-1', name: 'Computer Science & Engineering' },
   { id: 'dept-in-2', collegeId: 'col-in-1', name: 'Electrical Engineering' },
@@ -183,6 +257,7 @@ const SEED_DEPARTMENTS = [
 ];
 
 const SEED_COURSES = [
+  ...IN_COURSES,
   ...NE_COURSES,
   { id: 'crs-in-101', collegeId: 'col-in-1', departmentId: 'dept-in-1', courseCode: 'CS101', name: 'Computer Programming & Utilization' },
   { id: 'crs-in-102', collegeId: 'col-in-1', departmentId: 'dept-in-1', courseCode: 'CS213', name: 'Data Structures & Algorithms' },
@@ -197,6 +272,7 @@ const SEED_COURSES = [
 ];
 
 const SEED_PROFESSORS = [
+  ...IN_PROFESSORS,
   ...NE_PROFESSORS,
   {
     id: 'prof-in-1',
@@ -297,6 +373,7 @@ const SEED_PROFESSORS = [
 ];
 
 const SEED_REVIEWS = [
+  ...IN_REVIEWS,
   ...NE_REVIEWS,
   {
     id: 'rev-in-1',
@@ -461,13 +538,7 @@ const SEED_REVIEWS = [
 ];
 
 // Local Storage Helper Keys
-const STORAGE_KEYS = {
-  REVIEWS: 'campusrate_reviews_v1',
-  REPORTS: 'campusrate_reports_v1',
-  REQUESTS: 'campusrate_requests_v1',
-  PROFESSORS: 'campusrate_professors_v1',
-  USER: 'campusrate_current_user_v1'
-};
+// STORAGE_KEYS is declared below with full keys list
 
 // Initialize LocalStorage Data
 function getStoredData(key, fallback) {
@@ -485,6 +556,18 @@ function setStoredData(key, value) {
   } catch (e) {
     console.error('LocalStorage error:', e);
   }
+}
+
+// SANITIZATION UTILITY FOR XSS / HTML INJECTION MITIGATION
+export function sanitizeText(str) {
+  if (typeof str !== 'string') return str;
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#x27;')
+    .replace(/\//g, '&#x2F;');
 }
 
 // DEDUPLICATION UTILITIES
@@ -519,19 +602,76 @@ function deduplicateProfessors(professors) {
   });
 }
 
+const STORAGE_KEYS = {
+  ACCOUNTS: 'ratemyproff_user_accounts_v1',
+  REVIEWS: 'ratemyproff_reviews_v1',
+  REPORTS: 'ratemyproff_reports_v1',
+  REQUESTS: 'ratemyproff_requests_v1',
+  COLLEGES: 'ratemyproff_colleges_v1',
+  COLLEGE_REQUESTS: 'ratemyproff_college_requests_v1',
+  PROFESSORS: 'ratemyproff_professors_v1',
+  USER: 'ratemyproff_current_user_v1',
+  AUDIT_LOGS: 'ratemyproff_audit_logs_v1'
+};
+
+const SEED_ACCOUNTS = [
+  {
+    id: 'usr-admin-1',
+    name: 'Lead Administrator',
+    email: 'admin@ratemyproff.edu',
+    password: 'ADMIN-2026',
+    role: 'admin',
+    collegeId: 'col-in-1',
+    collegeName: 'IIT Bombay',
+    departmentId: 'dept-in-1',
+    yearOfStudy: 'Faculty Moderator',
+    verificationLevel: 'faculty_verified',
+    isAdmin: true,
+    createdAt: '2026-01-01T00:00:00Z'
+  },
+  {
+    id: 'usr-student-1',
+    name: 'Alex Rivera',
+    email: 'student@ratemyproff.edu',
+    password: 'password123',
+    role: 'student',
+    collegeId: 'col-in-1',
+    collegeName: 'IIT Bombay',
+    departmentId: 'dept-in-1',
+    yearOfStudy: 'Junior',
+    verificationLevel: 'email_verified',
+    isAdmin: false,
+    createdAt: '2026-01-02T00:00:00Z'
+  }
+];
+
+const DEFAULT_AUDIT_LOGS = [
+  { id: 'log-1', action: 'SYSTEM_BOOT', details: 'RateMyProff security policies & persistent auth database initialized', timestamp: new Date(Date.now() - 3600000).toISOString(), actor: 'System' },
+  { id: 'log-2', action: 'DIRECTORY_SYNC', details: 'Indexed 20 Indian & Northeastern universities catalog', timestamp: new Date(Date.now() - 1800000).toISOString(), actor: 'System' }
+];
+
 // ----------------------------------------------------
 // DATA SERVICE API
 // ----------------------------------------------------
 
 export const DataService = {
-  // --- AUTHENTICATION & PROFILE SIMULATION ---
+  // --- PERSISTENT USER & ADMIN ACCOUNTS DATABASE ---
+  getAccounts() {
+    return getStoredData(STORAGE_KEYS.ACCOUNTS, SEED_ACCOUNTS);
+  },
+
+  saveAccounts(accounts) {
+    setStoredData(STORAGE_KEYS.ACCOUNTS, accounts);
+  },
+
   getCurrentUser() {
     return getStoredData(STORAGE_KEYS.USER, {
-      id: 'demo-student-123',
+      id: 'usr-student-1',
       name: 'Alex Rivera',
-      email: 'alex.rivera@stanford.edu',
-      collegeId: 'col-1',
-      departmentId: 'dept-1',
+      email: 'student@ratemyproff.edu',
+      collegeId: 'col-in-1',
+      collegeName: 'IIT Bombay',
+      departmentId: 'dept-in-1',
       yearOfStudy: 'Junior',
       verificationLevel: 'email_verified',
       isAdmin: false
@@ -543,11 +683,140 @@ export const DataService = {
     return userData;
   },
 
+  registerAccount({ name, email, password, role = 'student', collegeId, collegeName, departmentId, yearOfStudy, adminKey }) {
+    if (!email || !email.includes('@')) {
+      throw new Error('Please enter a valid academic or personal email address.');
+    }
+    if (!password || password.length < 4) {
+      throw new Error('Password must be at least 4 characters long.');
+    }
+
+    const accounts = this.getAccounts();
+    const existing = accounts.find(a => a.email.toLowerCase() === email.trim().toLowerCase());
+    if (existing) {
+      throw new Error('An account with this email address already exists. Please sign in instead.');
+    }
+
+    const isAdmin = role === 'admin';
+    if (isAdmin) {
+      if (adminKey !== 'ADMIN-2026') {
+        throw new Error('Invalid Admin Security Passcode. Passcode ADMIN-2026 required for admin registration.');
+      }
+    }
+
+    const isEdu = email.endsWith('.edu') || email.endsWith('.ac.in') || email.endsWith('.edu.in');
+
+    const newAccount = {
+      id: `usr-${Date.now()}`,
+      name: sanitizeText(name) || (isAdmin ? 'Admin User' : 'Verified Student'),
+      email: email.trim().toLowerCase(),
+      password: password,
+      role: isAdmin ? 'admin' : 'student',
+      collegeId: collegeId || 'col-in-1',
+      collegeName: collegeName || 'University',
+      departmentId: departmentId || 'dept-in-1',
+      yearOfStudy: yearOfStudy || (isAdmin ? 'Faculty Lead' : 'Undergraduate'),
+      verificationLevel: isAdmin ? 'faculty_verified' : (isEdu ? 'email_verified' : 'unverified'),
+      isAdmin: isAdmin,
+      createdAt: new Date().toISOString()
+    };
+
+    accounts.unshift(newAccount);
+    this.saveAccounts(accounts);
+    this.setCurrentUser(newAccount);
+    
+    if (isAdmin) {
+      this.logAdminAction('ADMIN_REGISTERED', `New admin registered: ${email}`);
+    } else {
+      this.logAdminAction('USER_REGISTERED', `New student registered: ${email}`);
+    }
+
+    return newAccount;
+  },
+
+  loginAccount({ email, password, portalType }) {
+    if (!email || !email.includes('@')) {
+      throw new Error('Please enter a valid email address.');
+    }
+
+    const accounts = this.getAccounts();
+    const account = accounts.find(a => a.email.toLowerCase() === email.trim().toLowerCase());
+
+    if (!account) {
+      throw new Error('No account found with this email address. Please register a new account.');
+    }
+
+    const isAdminPortal = portalType === 'admin';
+    if (isAdminPortal && !account.isAdmin && account.role !== 'admin') {
+      throw new Error('This account does not have Admin Privileges. Please login through the Student Portal.');
+    }
+
+    if (account.password !== password) {
+      throw new Error('Incorrect password or security passcode. Please check your credentials.');
+    }
+
+    const sessionUser = {
+      ...account,
+      isAdmin: account.isAdmin || account.role === 'admin'
+    };
+
+    this.setCurrentUser(sessionUser);
+
+    if (sessionUser.isAdmin) {
+      this.logAdminAction('ADMIN_LOGIN', `Admin authenticated: ${email}`);
+    }
+
+    return sessionUser;
+  },
+
+  loginWithCredentials({ name, email, role, adminKey }) {
+    return this.loginAccount({ email, password: adminKey || 'password123', portalType: role });
+  },
+
+  logout() {
+    const guestUser = {
+      id: 'usr-student-1',
+      name: 'Alex Rivera',
+      email: 'student@ratemyproff.edu',
+      collegeId: 'col-in-1',
+      collegeName: 'IIT Bombay',
+      departmentId: 'dept-in-1',
+      yearOfStudy: 'Junior',
+      verificationLevel: 'email_verified',
+      isAdmin: false
+    };
+    this.setCurrentUser(guestUser);
+    return guestUser;
+  },
+
   toggleAdminRole(isAdmin) {
     const user = this.getCurrentUser();
-    const updated = { ...user, isAdmin };
+    const updated = { ...user, isAdmin, adminPasscodeVerified: isAdmin };
     this.setCurrentUser(updated);
+    if (isAdmin) {
+      this.logAdminAction('ROLE_TOGGLED', `User ${user.name} switched to Admin Mode`);
+    }
     return updated;
+  },
+
+  // --- AUDIT LOGGING ---
+  getAuditLogs() {
+    return getStoredData(STORAGE_KEYS.AUDIT_LOGS, DEFAULT_AUDIT_LOGS);
+  },
+
+  logAdminAction(action, details) {
+    const user = this.getCurrentUser();
+    const logs = this.getAuditLogs();
+    const newLog = {
+      id: `log-${Date.now()}`,
+      action,
+      details,
+      timestamp: new Date().toISOString(),
+      actor: user ? user.name : 'Admin System'
+    };
+    logs.unshift(newLog);
+    setStoredData(STORAGE_KEYS.AUDIT_LOGS, logs.slice(0, 50)); // keep last 50
+    return newLog;
   },
 
   // --- COLLEGES & DEPARTMENTS ---
@@ -566,7 +835,7 @@ export const DataService = {
   },
 
   async getDepartments(collegeId) {
-    const list = getStoredData('campusrate_departments_v1', SEED_DEPARTMENTS);
+    const list = getStoredData('ratemyproff_departments_v1', SEED_DEPARTMENTS);
     if (!collegeId) return list;
     return list.filter(d => d.collegeId === collegeId);
   },
@@ -722,7 +991,7 @@ export const DataService = {
       approachabilityRating: Number(reviewData.approachabilityRating),
       difficultyRating: Number(reviewData.difficultyRating),
       wouldTakeAgain: Boolean(reviewData.wouldTakeAgain),
-      reviewText: reviewData.reviewText,
+      reviewText: sanitizeText(reviewData.reviewText),
       semester: reviewData.semester,
       academicYear: Number(reviewData.academicYear),
       status: riskScore > 30 ? 'pending' : 'approved',
@@ -746,7 +1015,7 @@ export const DataService = {
       reviewId: reportData.reviewId,
       userId: user.id,
       reason: reportData.reason,
-      details: reportData.details || '',
+      details: sanitizeText(reportData.details || ''),
       status: 'open',
       createdAt: new Date().toISOString()
     };
@@ -774,11 +1043,11 @@ export const DataService = {
     const newRequest = {
       id: `col-req-${Date.now()}`,
       submittedBy: user.id,
-      name: requestData.name,
-      city: requestData.city,
-      state: requestData.state,
+      name: sanitizeText(requestData.name),
+      city: sanitizeText(requestData.city),
+      state: sanitizeText(requestData.state),
       website: requestData.website || '',
-      description: requestData.description || '',
+      description: sanitizeText(requestData.description || ''),
       status: 'pending',
       createdAt: new Date().toISOString()
     };
@@ -795,7 +1064,7 @@ export const DataService = {
     const newRequest = {
       id: `req-${Date.now()}`,
       submittedBy: user.id,
-      name: requestData.name,
+      name: sanitizeText(requestData.name),
       collegeId: requestData.collegeId,
       collegeName: requestData.collegeName,
       departmentId: requestData.departmentId,
@@ -867,9 +1136,9 @@ export const DataService = {
       setStoredData(STORAGE_KEYS.COLLEGES, cleanedColleges);
 
       // Add a default department for this college
-      const departments = getStoredData('campusrate_departments_v1', SEED_DEPARTMENTS);
+      const departments = getStoredData('ratemyproff_departments_v1', SEED_DEPARTMENTS);
       departments.unshift({ id: `dept-${Date.now()}`, collegeId: newCollege.id, name: 'General Academics' });
-      setStoredData('campusrate_departments_v1', departments);
+      setStoredData('ratemyproff_departments_v1', departments);
 
       return newCollege;
     }
@@ -952,5 +1221,96 @@ export const DataService = {
     const cleanedProfessors = deduplicateProfessors(professors);
     setStoredData(STORAGE_KEYS.PROFESSORS, cleanedProfessors);
     return newProf;
+  },
+
+  // --- FULL ADMIN AUTHORITY CRUD OPERATIONS ---
+  async deleteProfessor(profId) {
+    let professors = getStoredData(STORAGE_KEYS.PROFESSORS, SEED_PROFESSORS);
+    const initialLen = professors.length;
+    professors = professors.filter(p => p.id !== profId);
+    setStoredData(STORAGE_KEYS.PROFESSORS, professors);
+    this.logAdminAction('PROFESSOR_DELETED', `Deleted professor record #${profId}`);
+    return professors.length < initialLen;
+  },
+
+  async updateProfessor(profId, updatedFields) {
+    const professors = getStoredData(STORAGE_KEYS.PROFESSORS, SEED_PROFESSORS);
+    const idx = professors.findIndex(p => p.id === profId);
+    if (idx !== -1) {
+      professors[idx] = {
+        ...professors[idx],
+        ...updatedFields,
+        name: updatedFields.name ? sanitizeText(updatedFields.name) : professors[idx].name,
+        designation: updatedFields.designation ? sanitizeText(updatedFields.designation) : professors[idx].designation,
+        bio: updatedFields.bio ? sanitizeText(updatedFields.bio) : professors[idx].bio
+      };
+      setStoredData(STORAGE_KEYS.PROFESSORS, professors);
+      this.logAdminAction('PROFESSOR_UPDATED', `Updated professor details for #${profId} (${professors[idx].name})`);
+      return professors[idx];
+    }
+    return null;
+  },
+
+  async deleteCollege(collegeId) {
+    let colleges = getStoredData(STORAGE_KEYS.COLLEGES, SEED_COLLEGES);
+    const initialLen = colleges.length;
+    colleges = colleges.filter(c => c.id !== collegeId);
+    setStoredData(STORAGE_KEYS.COLLEGES, colleges);
+    this.logAdminAction('COLLEGE_DELETED', `Deleted institution record #${collegeId}`);
+    return colleges.length < initialLen;
+  },
+
+  async updateCollege(collegeId, updatedFields) {
+    const colleges = getStoredData(STORAGE_KEYS.COLLEGES, SEED_COLLEGES);
+    const idx = colleges.findIndex(c => c.id === collegeId);
+    if (idx !== -1) {
+      colleges[idx] = {
+        ...colleges[idx],
+        ...updatedFields,
+        name: updatedFields.name ? sanitizeText(updatedFields.name) : colleges[idx].name,
+        city: updatedFields.city ? sanitizeText(updatedFields.city) : colleges[idx].city,
+        state: updatedFields.state ? sanitizeText(updatedFields.state) : colleges[idx].state
+      };
+      setStoredData(STORAGE_KEYS.COLLEGES, colleges);
+      this.logAdminAction('COLLEGE_UPDATED', `Updated institution details for #${collegeId} (${colleges[idx].name})`);
+      return colleges[idx];
+    }
+    return null;
+  },
+
+  async deleteReview(reviewId) {
+    let reviews = getStoredData(STORAGE_KEYS.REVIEWS, SEED_REVIEWS);
+    const initialLen = reviews.length;
+    reviews = reviews.filter(r => r.id !== reviewId);
+    setStoredData(STORAGE_KEYS.REVIEWS, reviews);
+    this.logAdminAction('REVIEW_DELETED', `Deleted review entry #${reviewId}`);
+    return reviews.length < initialLen;
+  },
+
+  async getAllReviews() {
+    return getStoredData(STORAGE_KEYS.REVIEWS, SEED_REVIEWS);
+  },
+
+  async deleteAccount(userId) {
+    let accounts = this.getAccounts();
+    const initialLen = accounts.length;
+    accounts = accounts.filter(a => a.id !== userId);
+    this.saveAccounts(accounts);
+    this.logAdminAction('ACCOUNT_DELETED', `Admin removed user account #${userId}`);
+    return accounts.length < initialLen;
+  },
+
+  async toggleAccountRole(userId) {
+    const accounts = this.getAccounts();
+    const idx = accounts.findIndex(a => a.id === userId);
+    if (idx !== -1) {
+      const newRole = accounts[idx].role === 'admin' ? 'student' : 'admin';
+      accounts[idx].role = newRole;
+      accounts[idx].isAdmin = newRole === 'admin';
+      this.saveAccounts(accounts);
+      this.logAdminAction('ACCOUNT_ROLE_CHANGED', `Changed user role for #${userId} to ${newRole}`);
+      return accounts[idx];
+    }
+    return null;
   }
 };

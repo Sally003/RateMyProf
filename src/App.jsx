@@ -11,14 +11,16 @@ import ProfessorProfilePage from './pages/ProfessorProfilePage';
 import AdminDashboardPage from './pages/AdminDashboardPage';
 
 // Modals
-import AuthModal from './components/Modals/AuthModal';
+import AuthPortalModal from './components/Modals/AuthPortalModal';
 import SubmitReviewModal from './components/Modals/SubmitReviewModal';
 import ReportReviewModal from './components/Modals/ReportReviewModal';
 import RequestProfessorModal from './components/Modals/RequestProfessorModal';
 import RequestCollegeModal from './components/Modals/RequestCollegeModal';
+import { DataService } from './services/dataService';
 
 export default function App() {
-  // Modal Visibility States
+  // User & Modal States
+  const [currentUser, setCurrentUser] = useState(DataService.getCurrentUser());
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [isSubmitReviewOpen, setIsSubmitReviewOpen] = useState(false);
   const [targetProfessor, setTargetProfessor] = useState(null);
@@ -26,6 +28,10 @@ export default function App() {
   const [targetReviewId, setTargetReviewId] = useState(null);
   const [isRequestProfOpen, setIsRequestProfOpen] = useState(false);
   const [isRequestCollegeOpen, setIsRequestCollegeOpen] = useState(false);
+
+  const handleUserUpdated = (updatedUser) => {
+    setCurrentUser(updatedUser);
+  };
 
   const handleOpenSubmitReview = (prof) => {
     setTargetProfessor(prof);
@@ -77,7 +83,15 @@ export default function App() {
               />
             } 
           />
-          <Route path="/admin" element={<AdminDashboardPage />} />
+          <Route 
+            path="/admin" 
+            element={
+              <AdminDashboardPage 
+                onUserUpdated={handleUserUpdated}
+                onOpenAuth={() => setIsAuthOpen(true)}
+              />
+            } 
+          />
         </Routes>
       </main>
 
@@ -85,9 +99,10 @@ export default function App() {
       <Footer />
 
       {/* Global Modals */}
-      <AuthModal 
+      <AuthPortalModal 
         isOpen={isAuthOpen} 
-        onClose={() => setIsAuthOpen(false)} 
+        onClose={() => setIsAuthOpen(false)}
+        onUserUpdated={handleUserUpdated}
       />
 
       <SubmitReviewModal 

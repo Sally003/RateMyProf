@@ -39,7 +39,7 @@ export default function Footer() {
               <div className="w-8 h-8 rounded-xl bg-amber-500 text-slate-950 flex items-center justify-center font-bold">
                 <GraduationCap className="w-5 h-5" />
               </div>
-              <span className="font-display font-bold text-xl text-white">CampusRate</span>
+              <span className="font-display font-bold text-xl text-white">RateMyProff</span>
             </div>
             <p className="text-xs text-slate-400 leading-relaxed">
               Empowering students with transparent, trustworthy academic feedback to make informed course selection decisions.
@@ -70,7 +70,7 @@ export default function Footer() {
               Official faculty & source verification badges help differentiate community reviews from verified source entries.
             </p>
             <div className="text-[11px] text-slate-500">
-              © {new Date().getFullYear()} CampusRate Inc. All rights reserved.
+              © {new Date().getFullYear()} RateMyProff Inc. All rights reserved.
             </div>
           </div>
         </div>

@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { Search, ShieldCheck, Star, Award, GraduationCap, Building2, BookOpen, ThumbsUp, ArrowRight, UserCheck, CheckCircle2 } from 'lucide-react';
 import ThreeDTile from '../components/3DTile';
 import { DataService } from '../services/dataService';
+import ProfessorAvatar from '../components/ProfessorAvatar';
 
 export default function LandingPage({ onOpenAuth, onOpenRequestModal }) {
   const navigate = useNavigate();
@@ -117,11 +118,7 @@ export default function LandingPage({ onOpenAuth, onOpenRequestModal }) {
             >
               <div>
                 <div className="flex items-start justify-between gap-3 mb-4">
-                  <img
-                    src={prof.profileUrl}
-                    alt={prof.name}
-                    className="w-14 h-14 rounded-2xl object-cover shadow-md border-2 border-indigo-100"
-                  />
+                  <ProfessorAvatar name={prof.name} profileUrl={prof.profileUrl} size="md" />
                   <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo-950 to-indigo-800 text-amber-400 flex flex-col items-center justify-center shadow-md shrink-0">
                     <span className="font-display text-lg font-bold">{prof.overallRating ? prof.overallRating.toFixed(1) : 'N/A'}</span>
                     <span className="text-[9px] uppercase font-semibold text-slate-300">/ 5.0</span>
@@ -190,7 +187,7 @@ export default function LandingPage({ onOpenAuth, onOpenRequestModal }) {
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center max-w-2xl mx-auto mb-12">
           <span className="text-xs font-bold text-amber-600 uppercase tracking-wider">Transparent Architecture</span>
-          <h2 className="font-display text-3xl font-extrabold text-slate-950">How CampusRate Works</h2>
+          <h2 className="font-display text-3xl font-extrabold text-slate-950">How RateMyProff Works</h2>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
